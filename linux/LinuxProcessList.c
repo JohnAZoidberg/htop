@@ -579,6 +579,24 @@ static void LinuxProcessList_readVServerData(LinuxProcess* process, const char* 
 
 #endif
 
+static void LinuxProcessList_readOkernel(LinuxProcess* process, const char* dirname, const char* name) {
+   char filename[MAX_NAME+1];
+   xSnprintf(filename, MAX_NAME, "%s/%s/okernel", dirname, name);
+   FILE* file = fopen(filename, "r");
+   if (!file) {
+      return;
+   }
+   char buffer[PROC_LINE_LENGTH + 1];
+   if (fgets(buffer, PROC_LINE_LENGTH, file)) {
+      unsigned int okernel;
+      int ok = sscanf(buffer, "%32u", &okernel);
+      if (ok >= 1) {
+         process->okernel = okernel;
+      }
+   }
+   fclose(file);
+}
+
 static void LinuxProcessList_readOomData(LinuxProcess* process, const char* dirname, const char* name) {
    char filename[MAX_NAME+1];
    xSnprintf(filename, MAX_NAME, "%s/%s/oom_score", dirname, name);
@@ -819,6 +837,8 @@ static bool LinuxProcessList_recurseProcTree(LinuxProcessList* this, const char*
       unsigned long long int lasttimes = (lp->utime + lp->stime);
       int commLen = 0;
       unsigned int tty_nr = proc->tty_nr;
+      if (settings->flags & PROCESS_FLAG_LINUX_OKERNEL)
+         LinuxProcessList_readOkernel(lp, dirname, name);
       if (! LinuxProcessList_readStatFile(proc, dirname, name, command, &commLen))
          goto errorReadingProcess;
       if (tty_nr != proc->tty_nr && this->ttyDrivers) {

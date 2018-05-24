@@ -23,6 +23,7 @@ in the source distribution for its full text.
 #define PROCESS_FLAG_LINUX_VSERVER  0x0400
 #define PROCESS_FLAG_LINUX_CGROUP   0x0800
 #define PROCESS_FLAG_LINUX_OOM      0x1000
+#define PROCESS_FLAG_LINUX_OKERNEL  0x1100
 
 typedef enum UnsupportedProcessFields {
    FLAGS = 9,
@@ -57,6 +58,7 @@ typedef enum LinuxProcessFields {
    M_DRS = 43,
    M_LRS = 44,
    M_DT = 45,
+   OKERNEL = 53,
    #ifdef HAVE_OPENVZ
    CTID = 100,
    VPID = 101,
@@ -95,6 +97,7 @@ typedef struct LinuxProcess_ {
    Process super;
    bool isKernelThread;
    IOPriority ioPriority;
+   unsigned int okernel;
    unsigned long int cminflt;
    unsigned long int cmajflt;
    unsigned long long int utime;
@@ -199,6 +202,7 @@ ProcessFieldData Process_fields[] = {
    [M_DRS] = { .name = "M_DRS", .title = " DATA ", .description = "Size of the data segment plus stack usage of the process", .flags = 0, },
    [M_LRS] = { .name = "M_LRS", .title = " LIB ", .description = "The library size of the process", .flags = 0, },
    [M_DT] = { .name = "M_DT", .title = " DIRTY ", .description = "Size of the dirty pages of the process", .flags = 0, },
+   [OKERNEL] = { .name = "OKERNEL", .title = "OKERNEL", .description = "Status of a process in okernel-mode", .flags = PROCESS_FLAG_LINUX_OKERNEL, },
    [ST_UID] = { .name = "ST_UID", .title = " UID ", .description = "User ID of the process owner", .flags = 0, },
    [PERCENT_CPU] = { .name = "PERCENT_CPU", .title = "CPU% ", .description = "Percentage of the CPU time the process used in the last sampling", .flags = 0, },
    [PERCENT_MEM] = { .name = "PERCENT_MEM", .title = "MEM% ", .description = "Percentage of the memory the process is using, based on resident memory size", .flags = 0, },
@@ -333,6 +337,7 @@ void LinuxProcess_writeField(Process* this, RichString* str, ProcessField field)
       }
       break;
    }
+   case OKERNEL: xSnprintf(buffer, n, "%d ", lp->okernel); break;
    case CMINFLT: Process_colorNumber(str, lp->cminflt, coloring); return;
    case CMAJFLT: Process_colorNumber(str, lp->cmajflt, coloring); return;
    case M_DRS: Process_humanNumber(str, lp->m_drs * PAGE_SIZE_KB, coloring); return;
